@@ -39,7 +39,7 @@ class InferenceCore:
         # self.all_labels = [l.item() for l in all_labels]
         self.all_labels = all_labels
 
-    def step(self, image, mask=None, valid_labels=None, end=False):
+    def step(self, image, mask=None, np_image = None, valid_labels=None, end=False):
         # image: 3*H*W
         # mask: num_objects*H*W or None
         self.curr_ti += 1
