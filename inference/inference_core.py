@@ -3,7 +3,22 @@ from model.network import XMem
 from model.aggregate import aggregate
 
 from util.tensor_util import pad_divide_by, unpad
+import cv2
 
+def compare_images(image1, image2):
+
+    image1 = cv2.resize(image1, (300, 300))
+    image2 = cv2.resize(image2, (300, 300))
+
+    image1_gray = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
+    image2_gray = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
+
+    hist1 = cv2.calcHist([image1_gray], [0], None, [256], [0, 256])
+    hist2 = cv2.calcHist([image2_gray], [0], None, [256], [0, 256])
+
+    similarity = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CORREL)
+
+    return similarity
 
 class InferenceCore:
     def __init__(self, network:XMem, config):
@@ -18,6 +33,9 @@ class InferenceCore:
 
         self.clear_memory()
         self.all_labels = None
+
+        self.pre_image_flag = False
+        self.pre_image = None
 
     def clear_memory(self):
         self.curr_ti = -1
@@ -42,6 +60,18 @@ class InferenceCore:
     def step(self, image, mask=None, np_image = None, valid_labels=None, end=False):
         # image: 3*H*W
         # mask: num_objects*H*W or None
+
+        save = True
+
+        if self.pre_image_flag == False :
+            self.pre_image = np_image
+        else :
+            if compare_images(self.pre_image, np_image) > 0.995 :
+                save = False
+            else :
+                self.pre_image = np_image
+
+
         self.curr_ti += 1
         image, self.pad = pad_divide_by(image, 16)
         image = image.unsqueeze(0) # add the batch dimension
@@ -93,7 +123,7 @@ class InferenceCore:
             self.memory.create_hidden_state(len(self.all_labels), key)
 
         # save as memory if needed
-        if is_mem_frame:
+        if is_mem_frame and save:
             value, hidden = self.network.encode_value(image, f16, self.memory.get_hidden(), 
                                     pred_prob_with_bg[1:].unsqueeze(0), is_deep_update=is_deep_update)
             self.memory.add_memory(key, shrinkage, value, self.all_labels, 
