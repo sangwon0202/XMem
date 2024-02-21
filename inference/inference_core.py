@@ -65,6 +65,7 @@ class InferenceCore:
 
         if self.pre_image_flag == False :
             self.pre_image = np_image
+            self.pre_image_flag = True
         else :
             print(compare_images(self.pre_image, np_image))
             if compare_images(self.pre_image, np_image) > 0.995 :
