@@ -27,6 +27,7 @@ class InferenceCore:
         self.mem_every = config['mem_every']
         self.deep_update_every = config['deep_update_every']
         self.enable_long_term = config['enable_long_term']
+        self.threshold = config['threshold']
 
         # if deep_update_every < 0, synchronize deep update with memory frame
         self.deep_update_sync = (self.deep_update_every < 0)
@@ -67,7 +68,7 @@ class InferenceCore:
             self.pre_image = np_image
             self.pre_image_flag = True
         else :
-            if compare_images(self.pre_image, np_image) > 0.995 :
+            if compare_images(self.pre_image, np_image) > self.threshold  :
                 save = False
             else :
                 self.pre_image = np_image
